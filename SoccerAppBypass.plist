@@ -1,0 +1,10 @@
+{
+    Filter = {
+        Bundles = (
+            "jp.co.level5.inazumacross"
+        );
+        Executables = (
+            "SoccerApp"
+        );
+    };
+}
