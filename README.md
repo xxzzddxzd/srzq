@@ -28,13 +28,15 @@ Endpoints used by the current workflow:
 | Endpoint | Method | Purpose |
 | --- | --- | --- |
 | `/health` | `GET` | Check whether the plugin server is alive. |
-| `/control-settings` | `GET` / `POST` | Read or save control server settings such as the next-launch port. |
-| `/ready` | `GET` | Basic managed runtime readiness probe. |
-| `/unity-scene-probe` | `GET` | Inspect Unity/IL2CPP scene and object availability. |
+| `/control-settings` | `GET` / `POST` | Mac only. Read or save control server settings such as the next-launch port. |
+| `/ready` | `GET` / `POST` | Basic managed runtime readiness probe. |
 | `/battle-finish-body` | `POST` | Accept a `StartMainStoryBattle` response and return a generated `FinishMainStoryBattleReq`. |
-| `/finish-capture/install` | `GET` | Install the opt-in native finish request capture hook. |
-| `/finish-capture/clear` | `GET` | Clear old finish capture state. |
-| `/finish-capture/last` | `GET` | Read the latest captured native finish request body. |
+
+Debug-only endpoint:
+
+| Endpoint | Method | Purpose |
+| --- | --- | --- |
+| `/battle-stage-probe` | `POST` | Run a specific Unity battle bridge stage for diagnosis. Normal clients should use `/battle-finish-body`. |
 
 ## Install on Mac / PlayCover
 

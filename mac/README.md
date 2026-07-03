@@ -63,3 +63,12 @@ curl -sS -X POST http://127.0.0.1:19877/control-settings \
   -H 'Content-Type: application/json' \
   -d '{"port":19879}'
 ```
+
+Generate a `FinishMainStoryBattleReq` from a live `StartMainStoryBattle`
+response:
+
+```sh
+curl -sS -X POST http://127.0.0.1:19877/battle-finish-body \
+  -H 'Content-Type: application/json' \
+  --data-binary @start_main_story_battle_response.json
+```

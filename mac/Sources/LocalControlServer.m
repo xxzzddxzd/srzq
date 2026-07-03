@@ -18,7 +18,6 @@
 
 #import "IL2CPPStringProbe.h"
 #import "UnityRuntimeBridge.h"
-#import "FinishRequestCapture.h"
 
 #ifndef SB_CONTROL_PORT
 #define SB_CONTROL_PORT 19876
@@ -1198,174 +1197,6 @@ static NSString *SBControlRequestSummary(NSString *method,
     return [parts componentsJoinedByString:@" "];
 }
 
-static NSDictionary *SBControlRunBattleDetailProbe(NSString *detailJson, NSString *remoteAddress) {
-    __block NSDictionary *result = nil;
-    dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
-
-    SBControlRunOnMainRunLoop(^{
-        SBUnityBridgeBattleDetailResult bridgeResult = SBUnityBridgeRunBattleDetailProbe(detailJson ?: @"");
-        NSDictionary *details = SBUnityBridgeBattleDetailResultDictionary(bridgeResult);
-        NSMutableDictionary *payload = [NSMutableDictionary dictionary];
-        payload[@"time"] = SBControlTimestamp();
-        payload[@"remote"] = remoteAddress ?: @"";
-        payload[@"ok"] = @(bridgeResult.ok);
-        payload[@"details"] = details ?: @{};
-
-        NSData *json = [NSJSONSerialization dataWithJSONObject:payload
-                                                       options:NSJSONWritingPrettyPrinted | NSJSONWritingSortedKeys
-                                                         error:nil];
-        if (json) {
-            NSString *path = [SBControlLogRootPath() stringByAppendingPathComponent:@"control-battle-detail-probe.json"];
-            [json writeToFile:path atomically:YES];
-        }
-
-        SBControlAppendIndexLine(@"control-battle-detail-probe",
-                                 [NSString stringWithFormat:@"remote=%@ ok=%d stage=%d seed=%d",
-                                  remoteAddress ?: @"",
-                                  bridgeResult.ok,
-                                  bridgeResult.stageCode,
-                                  bridgeResult.seed]);
-        result = payload;
-        dispatch_semaphore_signal(semaphore);
-    });
-
-    long waitResult = dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 10 * NSEC_PER_SEC));
-    if (waitResult != 0) {
-        return @{
-            @"ok": @NO,
-            @"error": @"battle detail probe timed out on main thread"
-        };
-    }
-    return result ?: @{@"ok": @NO, @"error": @"battle detail probe produced no result"};
-}
-
-static NSDictionary *SBControlRunUnitySceneProbe(NSString *remoteAddress) {
-    __block NSDictionary *result = nil;
-    dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
-
-    SBControlRunOnMainRunLoop(^{
-        NSMutableDictionary *payload = [NSMutableDictionary dictionary];
-        @try {
-            SBUnityBridgeSceneProbeResult bridgeResult = SBUnityBridgeRunSceneProbe();
-            NSDictionary *details = SBUnityBridgeSceneProbeResultDictionary(bridgeResult);
-            payload[@"time"] = SBControlTimestamp();
-            payload[@"remote"] = remoteAddress ?: @"";
-            payload[@"ok"] = @(bridgeResult.ok);
-            payload[@"details"] = details ?: @{};
-
-            SBControlAppendIndexLine(@"control-unity-scene-probe",
-                                     [NSString stringWithFormat:@"remote=%@ ok=%d starters=%d battleVMs=%d starter=0x%llx battleVM=0x%llx model=0x%llx",
-                                      remoteAddress ?: @"",
-                                      bridgeResult.ok,
-                                      bridgeResult.battleStarterCount,
-                                      bridgeResult.soccerBattleVMCount,
-                                      (unsigned long long)bridgeResult.battleStarter,
-                                      (unsigned long long)bridgeResult.soccerBattleVMFromStarter,
-                                      (unsigned long long)bridgeResult.soccerBattleModel]);
-        } @catch (NSException *exception) {
-            payload[@"time"] = SBControlTimestamp();
-            payload[@"remote"] = remoteAddress ?: @"";
-            payload[@"ok"] = @NO;
-            payload[@"exceptionName"] = exception.name ?: @"";
-            payload[@"exceptionReason"] = exception.reason ?: @"";
-            payload[@"error"] = @"Unity scene probe raised an Objective-C exception";
-            SBControlAppendIndexLine(@"control-unity-scene-exception",
-                                     [NSString stringWithFormat:@"remote=%@ name=%@ reason=%@",
-                                      remoteAddress ?: @"",
-                                      exception.name ?: @"",
-                                      exception.reason ?: @""]);
-        }
-
-        NSData *json = [NSJSONSerialization dataWithJSONObject:payload
-                                                       options:NSJSONWritingPrettyPrinted | NSJSONWritingSortedKeys
-                                                         error:nil];
-        if (json) {
-            NSString *path = [SBControlLogRootPath() stringByAppendingPathComponent:@"control-unity-scene-probe.json"];
-            [json writeToFile:path atomically:YES];
-        }
-
-        result = payload;
-        dispatch_semaphore_signal(semaphore);
-    });
-
-    long waitResult = dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 10 * NSEC_PER_SEC));
-    if (waitResult != 0) {
-        return @{
-            @"ok": @NO,
-            @"error": @"unity scene probe timed out on main thread"
-        };
-    }
-    return result ?: @{@"ok": @NO, @"error": @"unity scene probe produced no result"};
-}
-
-static NSDictionary *SBControlRunFinishCaptureInstall(NSString *remoteAddress) {
-    __block NSDictionary *result = nil;
-    dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
-
-    SBControlRunOnMainRunLoop(^{
-        NSString *logRoot = SBControlLogRootPath();
-        NSDictionary *snapshot = SBFinishRequestCaptureInstall();
-        NSMutableDictionary *payload = [NSMutableDictionary dictionaryWithDictionary:snapshot ?: @{}];
-        payload[@"time"] = SBControlTimestamp();
-        payload[@"remote"] = remoteAddress ?: @"";
-        payload[@"action"] = @"install";
-        payload[@"logRoot"] = logRoot ?: @"";
-        payload[@"logSession"] = logRoot.lastPathComponent ?: @"";
-
-        NSData *json = [NSJSONSerialization dataWithJSONObject:payload
-                                                       options:NSJSONWritingPrettyPrinted | NSJSONWritingSortedKeys
-                                                         error:nil];
-        if (json) {
-            NSString *path = [logRoot stringByAppendingPathComponent:@"control-finish-capture-install.json"];
-            [json writeToFile:path atomically:YES];
-        }
-
-        SBControlAppendIndexLine(@"control-finish-capture-install",
-                                 [NSString stringWithFormat:@"remote=%@ installed=%d captured=%d",
-                                  remoteAddress ?: @"",
-                                  [payload[@"installed"] boolValue],
-                                  [payload[@"captured"] boolValue]]);
-        result = payload;
-        dispatch_semaphore_signal(semaphore);
-    });
-
-    long waitResult = dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 10 * NSEC_PER_SEC));
-    if (waitResult != 0) {
-        return @{
-            @"ok": @NO,
-            @"error": @"finish capture install timed out on main thread"
-        };
-    }
-    return result ?: @{@"ok": @NO, @"error": @"finish capture install produced no result"};
-}
-
-static NSDictionary *SBControlRunFinishCaptureSnapshot(NSString *remoteAddress, BOOL clear) {
-    NSString *logRoot = SBControlLogRootPath();
-    NSDictionary *snapshot = clear ? SBFinishRequestCaptureClear() : SBFinishRequestCaptureSnapshot();
-    NSMutableDictionary *payload = [NSMutableDictionary dictionaryWithDictionary:snapshot ?: @{}];
-    payload[@"time"] = SBControlTimestamp();
-    payload[@"remote"] = remoteAddress ?: @"";
-    payload[@"action"] = clear ? @"clear" : @"last";
-    payload[@"logRoot"] = logRoot ?: @"";
-    payload[@"logSession"] = logRoot.lastPathComponent ?: @"";
-
-    NSData *json = [NSJSONSerialization dataWithJSONObject:payload
-                                                   options:NSJSONWritingPrettyPrinted | NSJSONWritingSortedKeys
-                                                     error:nil];
-    if (json) {
-        NSString *name = clear ? @"control-finish-capture-clear.json" : @"control-finish-capture-last.json";
-        NSString *path = [logRoot stringByAppendingPathComponent:name];
-        [json writeToFile:path atomically:YES];
-    }
-
-    SBControlAppendIndexLine(clear ? @"control-finish-capture-clear" : @"control-finish-capture-last",
-                             [NSString stringWithFormat:@"remote=%@ installed=%d captured=%d",
-                              remoteAddress ?: @"",
-                              [payload[@"installed"] boolValue],
-                              [payload[@"captured"] boolValue]]);
-    return payload;
-}
-
 static NSDictionary *SBControlRunBattleStageProbe(NSString *detailJson,
                                                   NSInteger stage,
                                                   NSString *serverVersionHash,
@@ -1570,33 +1401,6 @@ static void SBControlHandleClient(int clientFd, NSString *remoteAddress) {
             @"requestId": requestId,
             @"action": @"ready"
         });
-    } else if ((strcmp(method, "GET") == 0 || strcmp(method, "POST") == 0) && [path isEqualToString:@"/unity-scene-probe"]) {
-        NSDictionary *probe = SBControlRunUnitySceneProbe(remoteAddress ?: @"");
-        BOOL ok = [probe[@"ok"] boolValue];
-        SBControlSendJSON(clientFd, ok ? 200 : 500, ok ? @"OK" : @"Probe Failed", probe);
-    } else if ((strcmp(method, "GET") == 0 || strcmp(method, "POST") == 0) && [path isEqualToString:@"/finish-capture/install"]) {
-        NSDictionary *capture = SBControlRunFinishCaptureInstall(remoteAddress ?: @"");
-        BOOL ok = [capture[@"installed"] boolValue];
-        SBControlSendJSON(clientFd, ok ? 200 : 500, ok ? @"OK" : @"Install Failed", capture);
-    } else if ((strcmp(method, "GET") == 0 || strcmp(method, "POST") == 0) && [path isEqualToString:@"/finish-capture/last"]) {
-        NSDictionary *capture = SBControlRunFinishCaptureSnapshot(remoteAddress ?: @"", NO);
-        SBControlSendJSON(clientFd, 200, @"OK", capture);
-    } else if ((strcmp(method, "GET") == 0 || strcmp(method, "POST") == 0) && [path isEqualToString:@"/finish-capture/clear"]) {
-        NSDictionary *capture = SBControlRunFinishCaptureSnapshot(remoteAddress ?: @"", YES);
-        SBControlSendJSON(clientFd, 200, @"OK", capture);
-    } else if (strcmp(method, "POST") == 0 && [path isEqualToString:@"/battle-detail-probe"]) {
-        NSData *bodyData = SBControlBodyFromRequest(requestData);
-        NSString *detailJson = SBControlDetailJsonFromBody(bodyData);
-        if (detailJson.length == 0) {
-            SBControlSendJSON(clientFd, 400, @"Bad Request", @{
-                @"ok": @NO,
-                @"error": @"POST body must be DetailJson or {\"detailJson\":\"...\"}"
-            });
-        } else {
-            NSDictionary *probe = SBControlRunBattleDetailProbe(detailJson, remoteAddress ?: @"");
-            BOOL ok = [probe[@"ok"] boolValue];
-            SBControlSendJSON(clientFd, ok ? 200 : 500, ok ? @"OK" : @"Probe Failed", probe);
-        }
     } else if (strcmp(method, "POST") == 0 && [path isEqualToString:@"/battle-stage-probe"]) {
         NSData *bodyData = SBControlBodyFromRequest(requestData);
         NSString *detailJson = SBControlDetailJsonFromBody(bodyData);
@@ -1644,7 +1448,7 @@ static void SBControlHandleClient(int clientFd, NSString *remoteAddress) {
     } else {
         SBControlSendJSON(clientFd, 404, @"Not Found", @{
             @"ok": @NO,
-            @"error": @"supported endpoints: GET /health, GET/POST /control-settings, GET/POST /ready, GET/POST /unity-scene-probe, GET/POST /finish-capture/install, GET/POST /finish-capture/last, GET/POST /finish-capture/clear, POST /battle-detail-probe, POST /battle-stage-probe, POST /battle-finish-body"
+            @"error": @"supported endpoints: GET /health, GET/POST /control-settings, GET/POST /ready, POST /battle-stage-probe, POST /battle-finish-body"
         });
     }
 
@@ -1771,7 +1575,7 @@ static void SBControlAcceptLoop(int serverFd, unsigned int generation) {
 static void SBControlBeginAcceptLoop(int serverFd, uint16_t port, unsigned int generation) {
     SBControlSetServerState(@"listening", [NSString stringWithFormat:@"0.0.0.0:%u", port]);
     SBControlAppendIndexLine(@"control-listening",
-                             [NSString stringWithFormat:@"0.0.0.0:%u endpoints=/health,/control-settings,/ready,/unity-scene-probe,/finish-capture/install,/finish-capture/last,/finish-capture/clear,/battle-detail-probe,/battle-stage-probe,/battle-finish-body", port]);
+                             [NSString stringWithFormat:@"0.0.0.0:%u endpoints=/health,/control-settings,/ready,/battle-stage-probe,/battle-finish-body", port]);
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{
         SBControlAcceptLoop(serverFd, generation);
     });

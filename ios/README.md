@@ -29,8 +29,10 @@ the host.
 
 ```sh
 curl -sS http://127.0.0.1:19876/health
-curl -sS http://127.0.0.1:19876/finish-capture/install
-curl -sS http://127.0.0.1:19876/finish-capture/last
+curl -sS http://127.0.0.1:19876/ready
+curl -sS -X POST http://127.0.0.1:19876/battle-finish-body \
+  -H 'Content-Type: application/json' \
+  --data-binary @start_main_story_battle_response.json
 ```
 
 Use `../README.md` for the shared endpoint list.
