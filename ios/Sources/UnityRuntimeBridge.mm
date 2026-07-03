@@ -1777,6 +1777,14 @@ SBUnityBridgeBattleConstructResult SBUnityBridgeRunBattleConstructProbe(NSString
                 return result;
             }
 
+            SBUnityBridgeSetBattleConstructStep(&result, "skip ParameterMaster diagnostic probes");
+            SBUnityBridgeEmitProgress(@"unity-battle-probe-step",
+                                      @"stage=%d skip=ParameterMasterDiagnostics path=%@ key=0x%llx",
+                                      maxStage,
+                                      parameterMasterPath,
+                                      (unsigned long long)(uintptr_t)protectionKey);
+
+            if (NO) {
             void *parameterMasterText = NULL;
             SBUnityBridgeSetBattleConstructStep(&result, "before ParameterMaster text probe");
             SBUnityBridgeEmitProgress(@"unity-battle-probe-step",
@@ -2115,6 +2123,7 @@ SBUnityBridgeBattleConstructResult SBUnityBridgeRunBattleConstructProbe(NSString
                                       result.directoryGetFilesFirst,
                                       (unsigned long long)result.loadMasterFileDocument,
                                       result.loadMasterFileManualParsed);
+            }
 
             SBUnityBridgeSetBattleConstructStep(&result, "before LoadMasterData public");
             SBUnityBridgeEmitProgress(@"unity-battle-probe-step",
