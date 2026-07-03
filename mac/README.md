@@ -72,3 +72,7 @@ curl -sS -X POST http://127.0.0.1:19877/battle-finish-body \
   -H 'Content-Type: application/json' \
   --data-binary @start_main_story_battle_response.json
 ```
+
+On a clean Mac, include `masterDataPath` and `serverVersionHash` in the posted
+JSON, or use the Python battle client which prepares these automatically. The
+path must point to a directory containing `Runtime/All`.

@@ -9,6 +9,7 @@ scripts.
 | --- | --- |
 | `mac/` | Mac Catalyst / PlayCover plugin and installer. |
 | `ios/` | Rootless iOS tweak for jailbroken devices. |
+| `battle_automation/` | Python client that logs in, starts a battle, asks the local plugin to generate the finish body, and optionally submits it. |
 
 The matching app package is kept outside this repository except for release
 artifacts. Do not place account sessions, Charles exports, device logs, or API
@@ -30,7 +31,7 @@ Endpoints used by the current workflow:
 | `/health` | `GET` | Check whether the plugin server is alive. |
 | `/control-settings` | `GET` / `POST` | Mac only. Read or save control server settings such as the next-launch port. |
 | `/ready` | `GET` / `POST` | Basic managed runtime readiness probe. |
-| `/battle-finish-body` | `POST` | Accept a `StartMainStoryBattle` response and return a generated `FinishMainStoryBattleReq`. |
+| `/battle-finish-body` | `POST` | Accept a `StartMainStoryBattle` response and return a generated `FinishMainStoryBattleReq`. May include top-level `masterDataPath` and `serverVersionHash`. |
 
 Debug-only endpoint:
 
@@ -79,6 +80,11 @@ curl -sS http://127.0.0.1:19877/health
 The Mac floating control panel has a settings button in the upper-right
 corner. Changing the port is persistent and restarts only the local control
 server.
+
+Clean Macs do not need a pre-existing TSV dump if the Python battle client is
+used. The client downloads the encrypted masterdata zip from the app's
+`MasterDataHost`, extracts it to a cache directory, and passes that path plus
+`serverVersionHash` to `/battle-finish-body`.
 
 ## iOS tweak path
 
