@@ -1,0 +1,9 @@
+Package: com.local.soccerappbypass
+Name: SoccerAppBypass
+Version: 0.1.0
+Architecture: iphoneos-arm64
+Description: Rootless jailbreak bypass and local HTTP request/response logger for jp.co.level5.inazumacross.
+Maintainer: local
+Author: local
+Section: Tweaks
+Depends: firmware (>= 14.0)
