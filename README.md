@@ -1,6 +1,6 @@
 # SoccerAppBypass tweak
 
-This directory contains only the SoccerAppBypass plugin sources and helper
+This repository contains only the SoccerAppBypass plugin sources and helper
 scripts.
 
 ## Layout
@@ -10,8 +10,9 @@ scripts.
 | `mac/` | Mac Catalyst / PlayCover plugin and installer. |
 | `ios/` | Rootless iOS tweak for jailbroken devices. |
 
-The matching app package is kept outside this directory. Do not place account
-sessions, Charles exports, device logs, or API tokens under `tweak/`.
+The matching app package is kept outside this repository except for release
+artifacts. Do not place account sessions, Charles exports, device logs, or API
+tokens here.
 
 ## Local control API
 
@@ -47,8 +48,8 @@ Prerequisites:
 Install or patch the PlayCover app from an IPA:
 
 ```sh
-cd tweak/mac
-SRC_ZIP=../../1.ipa \
+cd mac
+SRC_ZIP=../1.ipa \
 BUILD_DYLIB=0 \
 APP_ID=jp.co.level5.inazumacross \
 APP_EXECUTABLE_NAME=SoccerApp \
@@ -58,8 +59,8 @@ APP_EXECUTABLE_NAME=SoccerApp \
 Rebuild and patch in one step:
 
 ```sh
-cd tweak/mac
-SRC_ZIP=../../1.ipa \
+cd mac
+SRC_ZIP=../1.ipa \
 APP_ID=jp.co.level5.inazumacross \
 APP_EXECUTABLE_NAME=SoccerApp \
 ./prepare_playcover_mac.sh
@@ -82,13 +83,13 @@ server.
 The iOS rootless tweak lives in:
 
 ```text
-tweak/ios
+ios
 ```
 
 Build and install to a jailbroken device:
 
 ```sh
-cd tweak/ios
+cd ios
 ./scripts/build.sh
 ./scripts/install_rootless.sh root@127.0.0.1 2224
 ```

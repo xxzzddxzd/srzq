@@ -19,7 +19,7 @@ build/mac/SoccerAppBypass.dylib
 Patch the matching app from an IPA:
 
 ```sh
-SRC_ZIP=../../1.ipa \
+SRC_ZIP=../1.ipa \
 BUILD_DYLIB=0 \
 APP_ID=jp.co.level5.inazumacross \
 APP_EXECUTABLE_NAME=SoccerApp \
@@ -29,7 +29,7 @@ APP_EXECUTABLE_NAME=SoccerApp \
 Build the dylib first, then patch:
 
 ```sh
-SRC_ZIP=../../1.ipa \
+SRC_ZIP=../1.ipa \
 APP_ID=jp.co.level5.inazumacross \
 APP_EXECUTABLE_NAME=SoccerApp \
 ./prepare_playcover_mac.sh
